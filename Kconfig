@@ -1,0 +1,33 @@
+# Copyright (c) 2025 sekigon-gonnoc
+# SPDX-License-Identifier: MIT
+
+config ZMK_NON_LIPO_BATTERY_MANAGEMENT
+    bool "Non-LiPo battery monitoring and management"
+    depends on DT_HAS_ZMK_NON_LIPO_BATTERY_ENABLED
+    select ZMK_SLEEP 
+    select ADC 
+    select ADC_NRFX_SAADC
+    help
+      Enable support for non-LiPo batteries (such as alkaline or NiMH).
+
+if ZMK_NON_LIPO_BATTERY_MANAGEMENT
+
+config ZMK_NON_LIPO_MIN_MV
+    int "Minimum voltage in millivolts"
+    default 1100
+    help
+      The minimum voltage level for the battery, corresponding to 0% charge.
+
+config ZMK_NON_LIPO_MAX_MV
+    int "Maximum voltage in millivolts"
+    default 1200
+    help
+      The maximum voltage level for the battery, corresponding to 100% charge.
+
+config ZMK_NON_LIPO_LOW_MV
+    int "Low battery threshold in millivolts"
+    default 1100
+    help
+      The voltage level at which the system will power off to prevent damage.
+
+endif # ZMK_NON_LIPO_BATTERY_MANAGEMENT
