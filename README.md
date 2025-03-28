@@ -47,9 +47,9 @@ manifest:
 CONFIG_ZMK_NON_LIPO_BATTERY_MANAGEMENT=y
 
 # optional
-CONFIG_ZMK_NON_LIPO_MIN_MV=1000
-CONFIG_ZMK_NON_LIPO_MAX_MV=1200
-CONFIG_ZMK_NON_LIPO_LOW_MV=1000
+CONFIG_ZMK_NON_LIPO_MIN_MV=1100
+CONFIG_ZMK_NON_LIPO_MAX_MV=1300
+CONFIG_ZMK_NON_LIPO_LOW_MV=1050
 ```
 
 ## Configuration Options
@@ -57,9 +57,9 @@ CONFIG_ZMK_NON_LIPO_LOW_MV=1000
 | Option | Description | Default |
 |--------|-------------|---------|
 | `CONFIG_ZMK_NON_LIPO_BATTERY_MANAGEMENT` | Enable the feature | n/a |
-| `CONFIG_ZMK_NON_LIPO_MIN_MV` | Minimum voltage in millivolts (corresponds to 0% charge) | 1000 |
-| `CONFIG_ZMK_NON_LIPO_MAX_MV` | Maximum voltage in millivolts (corresponds to 100% charge) | 1200 |
-| `CONFIG_ZMK_NON_LIPO_LOW_MV` | Shutdown threshold voltage in millivolts | 1000 |
+| `CONFIG_ZMK_NON_LIPO_MIN_MV` | Minimum voltage in millivolts (corresponds to 0% charge) | 1100 |
+| `CONFIG_ZMK_NON_LIPO_MAX_MV` | Maximum voltage in millivolts (corresponds to 100% charge) | 1300 |
+| `CONFIG_ZMK_NON_LIPO_LOW_MV` | Shutdown threshold voltage in millivolts | 1050 |
 
 ## How It Works
 
@@ -125,9 +125,9 @@ manifest:
 CONFIG_ZMK_NON_LIPO_BATTERY_MANAGEMENT=y
 
 # オプション設定
-CONFIG_ZMK_NON_LIPO_MIN_MV=1000
-CONFIG_ZMK_NON_LIPO_MAX_MV=1200
-CONFIG_ZMK_NON_LIPO_LOW_MV=1000
+CONFIG_ZMK_NON_LIPO_MIN_MV=1100
+CONFIG_ZMK_NON_LIPO_MAX_MV=1300
+CONFIG_ZMK_NON_LIPO_LOW_MV=1050
 ```
 
 ## 設定オプション
@@ -135,9 +135,9 @@ CONFIG_ZMK_NON_LIPO_LOW_MV=1000
 | オプション | 説明 | デフォルト値 |
 |-----------|------|------------|
 | `CONFIG_ZMK_NON_LIPO_BATTERY_MANAGEMENT` | 機能を有効にする | n/a |
-| `CONFIG_ZMK_NON_LIPO_MIN_MV` | 最小電圧（ミリボルト単位、0%充電に対応） | 1000 |
-| `CONFIG_ZMK_NON_LIPO_MAX_MV` | 最大電圧（ミリボルト単位、100%充電に対応） | 1200 |
-| `CONFIG_ZMK_NON_LIPO_LOW_MV` | シャットダウンのしきい値電圧（ミリボルト単位） | 1000 |
+| `CONFIG_ZMK_NON_LIPO_MIN_MV` | 最小電圧（ミリボルト単位、0%充電に対応） | 1100 |
+| `CONFIG_ZMK_NON_LIPO_MAX_MV` | 最大電圧（ミリボルト単位、100%充電に対応） | 1300 |
+| `CONFIG_ZMK_NON_LIPO_LOW_MV` | シャットダウンのしきい値電圧（ミリボルト単位） | 1050 |
 
 ## 動作の仕組み
 
