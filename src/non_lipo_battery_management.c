@@ -14,11 +14,74 @@
 #include <zephyr/pm/pm.h>
 #include <zephyr/sys/poweroff.h>
 #include <zephyr/logging/log.h>
+#include <zephyr/bluetooth/bluetooth.h>
+#include <zephyr/bluetooth/conn.h>
 
 #include <zmk/pm.h>
 #include <zmk/usb.h>
 
 LOG_MODULE_REGISTER(zmk_battery_non_lipo, CONFIG_ZMK_LOG_LEVEL);
+
+#if IS_ENABLED(CONFIG_ZMK_NON_LIPO_ADV_SLEEP_TIMEOUT)
+static bool is_advertising = true;  // Assume advertising when there's no connection
+static bool has_connection = false;
+static int64_t advertising_start_time = 0;
+static struct k_work_delayable adv_timeout_work;
+
+// Callback to check advertising time and enter sleep mode if needed
+static void adv_timeout_handler(struct k_work *work) {
+    // Only check if we're advertising, have no connections, and no USB power
+    if (is_advertising && !has_connection && !zmk_usb_is_powered()) {
+        int64_t now = k_uptime_get();
+        int64_t elapsed = now - advertising_start_time;
+        
+        // If we've been advertising longer than the timeout, enter sleep mode
+        if (elapsed >= CONFIG_ZMK_NON_LIPO_ADV_SLEEP_TIMEOUT) {
+            LOG_WRN("Advertising timeout reached (%lldms), entering sleep", elapsed);
+            
+            // Wait for logs to flush
+            k_sleep(K_MSEC(100));
+
+            // Power off the system
+            zmk_pm_suspend_devices();
+            sys_poweroff();
+        } else {
+            // Not timed out yet, reschedule the timer
+            int64_t remaining = CONFIG_ZMK_NON_LIPO_ADV_SLEEP_TIMEOUT - elapsed;
+            k_work_schedule(&adv_timeout_work, K_MSEC(MIN(remaining, 10000)));
+        }
+    }
+}
+
+// Bluetooth connection callbacks
+static void connected_cb(struct bt_conn *conn, uint8_t err) {
+    if (err) {
+        LOG_ERR("Connection failed (err %u)", err);
+        return;
+    }
+
+    LOG_DBG("Connected, stopping advertising timer");
+    has_connection = true;
+    is_advertising = false;
+    k_work_cancel_delayable(&adv_timeout_work);
+}
+
+static void disconnected_cb(struct bt_conn *conn, uint8_t reason) {
+    LOG_DBG("Disconnected (reason %u), starting advertising timer", reason);
+    has_connection = false;
+    
+    // Start tracking advertising time
+    is_advertising = true;
+    advertising_start_time = k_uptime_get();
+    k_work_schedule(&adv_timeout_work, K_MSEC(10000)); // Check after 10 seconds
+}
+
+// Bluetooth connection callback structure
+static struct bt_conn_cb conn_callbacks = {
+    .connected = connected_cb,
+    .disconnected = disconnected_cb,
+};
+#endif
 
 struct io_channel_config {
     uint8_t channel;
@@ -211,6 +274,20 @@ static int non_lipo_init(const struct device *dev) {
 
     rc = adc_channel_setup(drv_data->adc, &drv_data->acc);
     LOG_DBG("AIN%u setup returned %d", drv_cfg->io_channel.channel, rc);
+
+#if IS_ENABLED(CONFIG_ZMK_NON_LIPO_ADV_SLEEP_TIMEOUT)
+    // Initialize the advertising timeout work
+    k_work_init_delayable(&adv_timeout_work, adv_timeout_handler);
+    
+    // Register Bluetooth connection callbacks
+    bt_conn_cb_register(&conn_callbacks);
+    
+    LOG_INF("Advertising sleep timeout initialized (%d ms)", CONFIG_ZMK_NON_LIPO_ADV_SLEEP_TIMEOUT);
+    
+    // Start the timer for initial check
+    advertising_start_time = k_uptime_get();
+    k_work_schedule(&adv_timeout_work, K_MSEC(10000));
+#endif
 
     return rc;
 }
