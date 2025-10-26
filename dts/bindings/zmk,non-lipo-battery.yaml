@@ -1,4 +1,8 @@
-description: ZMK Non-LiPo Battery Monitoring device
+title: ZMK Non-LiPo Battery Manager
+
+description: |
+  Non-LiPo Battery Management module for ZMK.
+  Measures battery voltage via ADC and reports percentage.
 
 compatible: "zmk,non-lipo-battery"
 
@@ -7,11 +11,17 @@ include: base.yaml
 properties:
   io-channels:
     required: true
-    description: |
-      ADC channel for battery voltage measurement.
-
-  power-gpios:
+    description: ADC channel used to measure battery voltage.
     type: phandle-array
-    description: |
-      GPIO to enable power to the voltage divider circuit.
-      Optional. If not provided, the voltage divider is assumed to be always powered.
+
+  full-mv:
+    type: int
+    required: false
+    description: "Full charge voltage in millivolts (default: 4200 mV)"
+    default: 4200
+
+  empty-mv:
+    type: int
+    required: false
+    description: "Empty voltage in millivolts (default: 3300 mV)"
+    default: 3300
