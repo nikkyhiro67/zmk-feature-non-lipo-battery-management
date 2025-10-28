@@ -240,14 +240,14 @@ static const struct sensor_driver_api non_lipo_api = {
  * Public helper APIs for other modules
  * --------------------------- */
 
-/* Forward declaration of device instance - used in these getters */
-extern const struct device *DEVICE_DT_INST_GET_VAR(int inst);
-/* Instead of the above macro-magic, we will access the static instance below. */
-
-/* Provide safe getters that return negative error codes on failure. */
-int non_lipo_battery_get_soc(void)
+/* Return SOC for instance index; negative error codes on failure */
+int non_lipo_battery_get_soc_by_index(int inst_idx)
 {
-    const struct device *dev = DEVICE_DT_INST_GET(0);
+    if (!DT_HAS_NODE(DT_DRV_INST(inst_idx))) {
+        return -ENODEV;
+    }
+
+    const struct device *dev = DEVICE_DT_INST_GET(inst_idx);
     if (!device_is_ready(dev)) {
         return -ENODEV;
     }
@@ -259,9 +259,13 @@ int non_lipo_battery_get_soc(void)
     return soc;
 }
 
-int non_lipo_battery_get_voltage_mv(void)
+int non_lipo_battery_get_voltage_mv_by_index(int inst_idx)
 {
-    const struct device *dev = DEVICE_DT_INST_GET(0);
+    if (!DT_HAS_NODE(DT_DRV_INST(inst_idx))) {
+        return -ENODEV;
+    }
+
+    const struct device *dev = DEVICE_DT_INST_GET(inst_idx);
     if (!device_is_ready(dev)) {
         return -ENODEV;
     }
@@ -271,6 +275,17 @@ int non_lipo_battery_get_voltage_mv(void)
     int mv = drv_data->millivolts;
     k_mutex_unlock(&drv_data->lock);
     return mv;
+}
+
+/* Backwards-compatible wrappers (instance 0) */
+int non_lipo_battery_get_soc(void)
+{
+    return non_lipo_battery_get_soc_by_index(0);
+}
+
+int non_lipo_battery_get_voltage_mv(void)
+{
+    return non_lipo_battery_get_voltage_mv_by_index(0);
 }
 
 /* ---------------------------
@@ -340,31 +355,32 @@ static int non_lipo_init(const struct device *dev)
 }
 
 /* ---------------------------
- * Device instance / config
+ * Device instance / config generation for all DT_INST(..., status = "okay")
  * --------------------------- */
-static struct non_lipo_data non_lipo_data = {
-    .adc = DEVICE_DT_GET(DT_IO_CHANNELS_CTLR(DT_DRV_INST(0))),
-    .adc_raw = 0,
-    .millivolts = 0,
-    .state_of_charge = 100,
-};
 
-static const struct non_lipo_config non_lipo_cfg = {
-    .io_channel = {
-        DT_IO_CHANNELS_INPUT(DT_DRV_INST(0)),
-    },
-#if DT_INST_NODE_HAS_PROP(0, power_gpios)
-    .power = GPIO_DT_SPEC_INST_GET(0, power_gpios),
-#endif
-};
+#define NON_LIPO_INIT(inst)                                                              \
+    static struct non_lipo_data non_lipo_data_##inst = {                                 \
+        .adc = DEVICE_DT_GET(DT_IO_CHANNELS_CTLR(DT_DRV_INST(inst))),                    \
+        .adc_raw = 0,                                                                    \
+        .millivolts = 0,                                                                 \
+        .state_of_charge = 100,                                                          \
+    };                                                                                   \
+    static const struct non_lipo_config non_lipo_cfg_##inst = {                          \
+        .io_channel = {                                                                  \
+            DT_IO_CHANNELS_INPUT(DT_DRV_INST(inst)),                                     \
+        },                                                                               \
+        IF_ENABLED(DT_INST_NODE_HAS_PROP(inst, power_gpios),                             \
+            (.power = GPIO_DT_SPEC_INST_GET(inst, power_gpios),))                        \
+    };                                                                                   \
+    DEVICE_DT_INST_DEFINE(inst,                                                           \
+                          &non_lipo_init,                                                 \
+                          NULL,                                                           \
+                          &non_lipo_data_##inst,                                          \
+                          &non_lipo_cfg_##inst,                                           \
+                          POST_KERNEL,                                                    \
+                          CONFIG_SENSOR_INIT_PRIORITY,                                    \
+                          &non_lipo_api);
 
-DEVICE_DT_INST_DEFINE(0,
-                      &non_lipo_init,
-                      NULL,
-                      &non_lipo_data,
-                      &non_lipo_cfg,
-                      POST_KERNEL,
-                      CONFIG_SENSOR_INIT_PRIORITY,
-                      &non_lipo_api);
+DT_INST_FOREACH_STATUS_OKAY(NON_LIPO_INIT);
 
 /* End of file */
